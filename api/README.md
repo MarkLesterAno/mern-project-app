@@ -28,5 +28,5 @@
 
 4. **Start the backend server:**
     ```sh
-    npm start
+    npm run dev
     ```
