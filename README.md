@@ -8,8 +8,7 @@ The backend is built with Node.js and Express, providing a RESTful API for the a
 
 ### Key Features
 - User authentication and authorization
-- Group and permissions management
-- Logging and notification system
+- Basic user, group and permissions management
 
 ## Frontend (Client)
 
@@ -17,7 +16,6 @@ The frontend is built with React.js and utilizes the Mantine UI library for UI c
 
 ### Key Features
 - User-friendly interface for managing groups and permissions
-- Real-time notifications
 - Form handling with validation
 
 ## Getting Started
