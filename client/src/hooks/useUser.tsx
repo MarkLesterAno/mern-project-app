@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from 'react-query';
 import UserService from '../services/UserService';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import usePagination from './usePagination';
 
 const api = new UserService();
@@ -51,6 +51,8 @@ const useUsers = (queryClient: any) => {
         },
     });
 
+    // Introduce a delay when changing `isLoading` to false
+
     const searchMutation = useMutation(searchUsers, {
         onSuccess: (data) => {
             setUsers(data);
@@ -83,7 +85,7 @@ const useUsers = (queryClient: any) => {
 
     return {
         users,
-        isLoading: !users.length && !searchMutation.isLoading,
+        isLoading: !users.length || searchMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || patchMutation.isLoading || deleteMutation.isLoading,
         error: searchMutation.error,
         fetchUsers: searchMutation.mutateAsync,
         searchUser: searchMutation.mutateAsync,
@@ -93,7 +95,7 @@ const useUsers = (queryClient: any) => {
         deleteUser: deleteMutation.mutateAsync,
         changePage,
         pagination,
-        setPageLimit
+        setPageLimit,
     };
 };
 

@@ -3,8 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import { LayoutView } from '../layout';
 
 const ProtectedRoutes = () => {
-    const { isLoggedIn } = useAuth()
-    return <LayoutView>{isLoggedIn() ? <Outlet /> : <Navigate to='/login' />}</LayoutView>
+    const { isLoggedIn, user } = useAuth()
+
+    return <LayoutView user={user}>{isLoggedIn ? <Outlet /> : <Navigate to='/login' />}</LayoutView>
 }
 
 export default ProtectedRoutes

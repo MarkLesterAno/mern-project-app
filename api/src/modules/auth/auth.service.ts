@@ -173,20 +173,14 @@ export default class AuthService {
                     if (user.isActive && user.isSuperuser) {
                         const permissions: any = await this.permissionModel.find({})
                         const permissionsData = permissions.map((permission: any) => {
-                            return {
-                                name: permission.name,
-                                description: permission.description
-                            }
+                            return permission.description
                         })
                         return { permissions: permissionsData }
                     } else {
                         let permissions: any = []
                         user.groups.map((group: any) => {
                             const permissionsData = group.permissions.map((permission: any) => {
-                                return {
-                                    name: permission.name,
-                                    description: permission.description
-                                }
+                                return permission.description
                             })
                             permissions.push(permissionsData)
                         })

@@ -1,227 +1,190 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
+    ScrollArea,
     Table,
-    UnstyledButton,
-    Group,
-    Text,
-    Center,
     TextInput,
-    rem,
-    keys,
+    Text,
+    Group,
+    Checkbox,
+    Center,
+    UnstyledButton,
+    LoadingOverlay,
+    Grid,
+    ActionIcon,
+    Stack,
 } from '@mantine/core';
-import { IconSelector, IconChevronDown, IconChevronUp, IconSearch } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronUp, IconEdit, IconSearch, IconSelector, IconTrash } from '@tabler/icons-react';
+import cx from 'clsx';
 import classes from '../assets/styles/table-sort.module.css';
-import ICompany from '../interfaces/ICompany';
-import IThProps from '../interfaces/IThProp';
 
-
-const Th = ({ children, reversed, sorted, onSort }: IThProps) => {
-    const Icon = sorted ? (reversed ? IconChevronUp : IconChevronDown) : IconSelector;
-    return (
-        <Table.Th className={classes.th}>
-            <UnstyledButton onClick={onSort} className={classes.control}>
-                <Group justify="space-between">
-                    <Text fw={500} fz="sm">
-                        {children}
-                    </Text>
-                    <Center className={classes.icon}>
-                        <Icon style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-                    </Center>
-                </Group>
-            </UnstyledButton>
-        </Table.Th>
-    );
+interface RowData {
+    [key: string]: string | boolean;
 }
 
-const filterData = (data: ICompany[], search: string) => {
-    const query = search.toLowerCase().trim();
-    return data.filter((item) =>
-        keys(data[0]).some((key) => item[key].toLowerCase().includes(query))
-    );
+interface ThProps {
+    children: React.ReactNode;
+    reversed: boolean;
+    sorted: boolean;
+    onSort: () => void;
 }
 
-const sortData = (
-    data: ICompany[],
-    payload: { sortBy: keyof ICompany | null; reversed: boolean; search: string }
-) => {
-    const { sortBy } = payload;
-
-    if (!sortBy) {
-        return filterData(data, payload.search);
-    }
-
-    return filterData(
-        [...data].sort((a, b) => {
-            if (payload.reversed) {
-                return b[sortBy].localeCompare(a[sortBy]);
-            }
-
-            return a[sortBy].localeCompare(b[sortBy]);
-        }),
-        payload.search
-    );
+interface SortableTableProps {
+    data: RowData[];
+    columns: { key: keyof RowData; label: string }[];
+    children?: React.ReactNode;
+    loading: boolean;
+    onEdit: (row: RowData) => void;
+    onDelete: (_id: string) => void;
 }
 
-const data = [
-    {
-        name: 'Athena Weissnat',
-        description: 'Little - Rippin',
-        email: 'Elouise.Prohaska@yahoo.com',
-    },
-    {
-        name: 'Deangelo Runolfsson',
-        description: 'Greenfelder - Krajcik',
-        email: 'Kadin_Trantow87@yahoo.com',
-    },
-    {
-        name: 'Danny Carter',
-        description: 'Kohler and Sons',
-        email: 'Marina3@hotmail.com',
-    },
-    {
-        name: 'Trace Tremblay PhD',
-        description: 'Crona, Aufderhar and Senger',
-        email: 'Antonina.Pouros@yahoo.com',
-    },
-    {
-        name: 'Derek Dibbert',
-        description: 'Gottlieb LLC',
-        email: 'Abagail29@hotmail.com',
-    },
-    {
-        name: 'Viola Bernhard',
-        description: 'Funk, Rohan and Kreiger',
-        email: 'Jamie23@hotmail.com',
-    },
-    {
-        name: 'Austin Jacobi',
-        description: 'Botsford - Corwin',
-        email: 'Genesis42@yahoo.com',
-    },
-    {
-        name: 'Hershel Mosciski',
-        description: 'Okuneva, Farrell and Kilback',
-        email: 'Idella.Stehr28@yahoo.com',
-    },
-    {
-        name: 'Mylene Ebert',
-        description: 'Kirlin and Sons',
-        email: 'Hildegard17@hotmail.com',
-    },
-    {
-        name: 'Lou Trantow',
-        description: 'Parisian - Lemke',
-        email: 'Hillard.Barrows1@hotmail.com',
-    },
-    {
-        name: 'Dariana Weimann',
-        description: 'Schowalter - Donnelly',
-        email: 'Colleen80@gmail.com',
-    },
-    {
-        name: 'Dr. Christy Herman',
-        description: 'VonRueden - Labadie',
-        email: 'Lilyan98@gmail.com',
-    },
-    {
-        name: 'Katelin Schuster',
-        description: 'Jacobson - Smitham',
-        email: 'Erich_Brekke76@gmail.com',
-    },
-    {
-        name: 'Melyna Macejkovic',
-        description: 'Schuster LLC',
-        email: 'Kylee4@yahoo.com',
-    },
-    {
-        name: 'Pinkie Rice',
-        description: 'Wolf, Trantow and Zulauf',
-        email: 'Fiona.Kutch@hotmail.com',
-    },
-    {
-        name: 'Brain Kreiger',
-        description: 'Lueilwitz Group',
-        email: 'Rico98@hotmail.com',
-    },
-];
-
-export const TableSort = () => {
-
+export const SortableTable: React.FC<SortableTableProps> = ({ data, columns, loading, onEdit, onDelete, children }) => {
     const [search, setSearch] = useState('');
-    const [sortedData, setSortedData] = useState(data);
-    const [sortBy, setSortBy] = useState<keyof ICompany | null>(null);
+    const [sortBy, setSortBy] = useState<keyof RowData | null>(null);
     const [reverseSortDirection, setReverseSortDirection] = useState(false);
+    const [loadingRow, setLoadingRow] = useState<string | null>(null);
+    const [scrolled, setScrolled] = useState(false);
 
-    const setSorting = (field: keyof ICompany) => {
+    // Filter data based on the search query
+    const filteredData = data.filter((item) =>
+        Object.values(item).some((value) =>
+            value.toString().toLowerCase().includes(search.toLowerCase())
+        )
+    );
+
+    // Sort data based on the selected column
+    const sortedData = [...filteredData].sort((a, b) => {
+        if (!sortBy) return 0;
+
+        const aValue = a[sortBy];
+        const bValue = b[sortBy];
+
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return reverseSortDirection
+                ? bValue.localeCompare(aValue)
+                : aValue.localeCompare(bValue);
+        }
+
+        return 0;
+    });
+
+    const handleEdit = async (row: RowData) => {
+        onEdit(row);
+    };
+
+    const handleDelete = async (_id: string) => {
+        setLoadingRow(_id);
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate 2 seconds delay
+        onDelete(_id);
+        setLoadingRow(null);
+    };
+
+
+    const setSorting = (field: keyof RowData) => {
         const reversed = field === sortBy ? !reverseSortDirection : false;
         setReverseSortDirection(reversed);
         setSortBy(field);
-        setSortedData(sortData(data, { sortBy: field, reversed, search }));
     };
 
-    const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const { value } = event.currentTarget;
-        setSearch(value);
-        setSortedData(sortData(data, { sortBy, reversed: reverseSortDirection, search: value }));
+    const renderValue = (value: any) => {
+        switch (typeof value) {
+            case 'boolean':
+                return <Checkbox checked={value} disabled />;
+            default:
+                return value;
+        }
     };
 
-    const rows = sortedData.map((row: any) => (
-        <Table.Tr key={row.name}>
-            <Table.Td>{row.name}</Table.Td>
-            <Table.Td>{row.email}</Table.Td>
-            <Table.Td>{row.description}</Table.Td>
+    function Th({ children, reversed, sorted, onSort }: ThProps) {
+        const Icon = sorted ? (reversed ? IconChevronUp : IconChevronDown) : IconSelector;
+        return (
+            <Table.Th className={classes.th}>
+                <UnstyledButton onClick={onSort} className={classes.control}>
+                    <Group justify="space-between">
+                        <Text fw={500} fz="sm">
+                            {children}
+                        </Text>
+                        <Center className={classes.icon}>
+                            <Icon size={16} stroke={1.5} />
+                        </Center>
+                    </Group>
+                </UnstyledButton>
+            </Table.Th>
+        );
+    }
+
+    const rows = sortedData.map((row, index) => (
+        <Table.Tr key={index}>
+            {columns.map((column) => {
+                return (
+                    <Table.Td key={column.key as string}>{renderValue(row[column.key])}</Table.Td>
+                )
+            })}
+            <Table.Td>
+                <Group gap="xs">
+                    <ActionIcon
+                        variant="filled"
+                        aria-label="Edit Action"
+                        onClick={() => handleEdit(row)}
+                    >
+                        <IconEdit style={{ width: '70%', height: '70%' }} stroke={1.5} />
+                    </ActionIcon>
+                    <ActionIcon
+                        variant="filled"
+                        aria-label="Delete Action"
+                        onClick={() => handleDelete(row._id as string)}
+                        loading={loadingRow === (row._id as string)}
+                        loaderProps={{ type: 'dots' }}
+                    >
+                        <IconTrash style={{ width: '70%', height: '70%' }} stroke={1.5} />
+                    </ActionIcon>
+                </Group>
+            </Table.Td>
         </Table.Tr>
     ));
 
     return (
-        <Table.ScrollContainer minWidth={500}>
+        <Stack gap={"xs"}>
             <TextInput
                 placeholder="Search by any field"
                 mb="md"
-                leftSection={<IconSearch style={{ width: rem(16), height: rem(16) }} stroke={1.5} />}
+                leftSection={<IconSearch size={16} stroke={1.5} />}
                 value={search}
-                onChange={handleSearchChange}
+                onChange={(event) => setSearch(event.currentTarget.value)}
             />
-            <Table horizontalSpacing="md" verticalSpacing="xs" miw={700} layout="fixed">
-                <Table.Tbody>
-                    <Table.Tr>
-                        <Th
-                            sorted={sortBy === 'name'}
-                            reversed={reverseSortDirection}
-                            onSort={() => setSorting('name')}
-                        >
-                            Name
-                        </Th>
-                        <Th
-                            sorted={sortBy === 'email'}
-                            reversed={reverseSortDirection}
-                            onSort={() => setSorting('email')}
-                        >
-                            Email
-                        </Th>
-                        <Th
-                            sorted={sortBy === 'description'}
-                            reversed={reverseSortDirection}
-                            onSort={() => setSorting('description')}
-                        >
-                            Company
-                        </Th>
-                    </Table.Tr>
-                </Table.Tbody>
-                <Table.Tbody>
-                    {rows.length > 0 ? (
-                        rows
-                    ) : (
+            <ScrollArea h={600} onScrollPositionChange={({ y }) => setScrolled(y !== 0)}>
+                <Table miw={1050} horizontalSpacing="md" verticalSpacing="xs" layout="fixed">
+                    <Table.Thead className={cx(classes.header, { [classes.scrolled]: scrolled })}>
                         <Table.Tr>
-                            <Table.Td colSpan={Object.keys(data[0]).length}>
-                                <Text fw={500} ta="center">
-                                    Nothing found
-                                </Text>
-                            </Table.Td>
+                            {columns.map((column) => (
+                                <Th
+                                    key={column.key as string}
+                                    sorted={sortBy === column.key}
+                                    reversed={reverseSortDirection}
+                                    onSort={() => setSorting(column.key)}
+                                >
+                                    {column.label}
+                                </Th>
+                            ))}
+                            <Table.Th>Actions</Table.Th>
                         </Table.Tr>
-                    )}
-                </Table.Tbody>
-            </Table>
-        </Table.ScrollContainer>
+                    </Table.Thead>
+                    <Table.Tbody>
+                        {rows.length > 0 ? (
+                            rows
+                        ) : (
+                            <Table.Tr>
+                                <Table.Td colSpan={columns.length + 1}>
+                                    <Text fw={500} ta="center">
+                                        Nothing found
+                                    </Text>
+                                </Table.Td>
+                            </Table.Tr>
+                        )}
+                    </Table.Tbody>
+                </Table>
+            </ScrollArea>
+            { children}
+        </Stack>
+
     );
-}
+};

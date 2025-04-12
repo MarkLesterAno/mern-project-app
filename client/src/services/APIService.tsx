@@ -1,100 +1,140 @@
-import axios from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import Config from '../config';
+
 class APIService {
-    protected client: any;
-    loading: boolean;
-    error: null;
-    access_token: any;
-    refresh_token: string;
+    private client: AxiosInstance;
+    private activeRequests = 0;
+    private error: any;
 
     constructor() {
-
-        this.loading = false;
-        this.access_token = '';
-        this.refresh_token = '';
         this.error = null;
 
-        const access_token = localStorage.getItem('access_token')
-        const user: any = localStorage.getItem('user')
+        this.client = axios.create({
+            baseURL: Config.API_BASEURL,
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+                "X-Frame-Options": "DENY",
+            },
+        });
 
-        // Add request interceptors
-        axios.interceptors.request.use(
+        this.initializeRequestInterceptor();
+        this.initializeResponseInterceptor();
+    }
+
+    private initializeRequestInterceptor() {
+        this.client.interceptors.request.use(
             (config: any) => {
-                this.loading = true;
-                config.baseURL = Config.API_BASEURL
-
-                if (access_token && access_token.length > 0 && access_token !== undefined) {
-                    config.headers.Authorization = `Bearer ${access_token}`
+                this.activeRequests++;
+                const accessToken = this.getAccessToken();
+                if (accessToken) {
+                    config.headers = {
+                        ...config.headers,
+                        Authorization: `Bearer ${accessToken}`,
+                    };
                 }
-                config.headers["Access-Control-Allow-Origin"] = "*";
-                config.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
-                config.headers["X-Frame-Options"] = 'DENY';
-
                 return config;
             },
-            (error: any) => {
-                this.loading = false;
+            (error) => {
+                this.activeRequests = Math.max(this.activeRequests - 1, 0);
                 return Promise.reject(error);
             }
         );
+    }
 
-        // Add response interceptors
-        axios.interceptors.response.use(
-            (response) => {
-                this.loading = false;
+    private initializeResponseInterceptor() {
+        this.client.interceptors.response.use(
+            (response: AxiosResponse) => {
+                this.activeRequests = Math.max(this.activeRequests - 1, 0);
                 return response;
             },
             async (error) => {
                 const originalRequest = error?.config;
 
-                const _user = JSON.parse(user)
-
                 if (error?.response?.status === 401 && !originalRequest._retry) {
-
-                    originalRequest._retry = true
+                    originalRequest._retry = true;
 
                     try {
-                        const result: any = await axios.post(`/auth/token/refresh/`, {
-                            'refresh_token': _user.refresh_token
-                        });
-                        
-                        const access = result.data['access_token']
-                        localStorage.setItem('access_token', access)
-                        axios.defaults.headers.common['Authorization'] = `Bearer  ${access}`
-
-                        return axios(originalRequest)
-                    }
-                    catch (_error: any) {
-                        if (_error?.response && _error?.response?.data) {
-                            return Promise.reject(_error.response.data);
+                        await this.refreshAccessToken();
+                        const accessToken = this.getAccessToken();
+                        if (accessToken) {
+                            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                            return this.client(originalRequest);
                         }
-                        return Promise.reject(_error);
+                    } catch (refreshError) {
+                        return Promise.reject(refreshError);
                     }
-
                 }
+
                 return Promise.reject(error);
             }
         );
     }
 
-    async get(url: any, config = {}) {
-        return await axios.get(url, config)
-    }
-    async post(url: any, data: any, config = {}) {
-        return await axios.post(url, data, config);
-    }
-    async put(url: any, data: any, config = {}) {
-        return await axios.put(url, data, config);
-    }
-    async patch(url: any, data: any, config = {}) {
-        return await axios.patch(url, data, config);
-    }
-    async delete(url: any, config = {}) {
-        return await axios.delete(url, config);
+    private async refreshAccessToken(): Promise<void> {
+        const refreshToken = this.getRefreshToken();
+        if (!refreshToken) {
+            throw new Error('No refresh token available');
+        }
+
+        try {
+            const response = await axios.post(`${Config.API_BASEURL}/auth/token/refresh/`, {
+                refresh_token: refreshToken,
+            });
+
+            const newAccessToken = response.data['access_token'];
+            this.setAccessToken(newAccessToken);
+        } catch (error) {
+            this.setAccessToken(null);
+            throw error;
+        }
     }
 
-    // Add more HTTP methods as needed
+    private getAccessToken(): string | null {
+        return localStorage.getItem('access_token');
+    }
 
+    private setAccessToken(token: string | null): void {
+        if (token) {
+            localStorage.setItem('access_token', token);
+            this.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+            localStorage.removeItem('access_token');
+            delete this.client.defaults.headers.common['Authorization'];
+        }
+    }
+
+    private getRefreshToken(): string | null {
+        return localStorage.getItem('refresh_token');
+    }
+
+    private setRefreshToken(token: string | null): void {
+        if (token) {
+            localStorage.setItem('refresh_token', token);
+        } else {
+            localStorage.removeItem('refresh_token');
+        }
+    }
+
+    async get(url: string, config = {}) {
+        return this.client.get(url, config);
+    }
+
+    async post(url: string, data: any, config = {}) {
+        return this.client.post(url, data, config);
+    }
+
+    async put(url: string, data: any, config = {}) {
+        return this.client.put(url, data, config);
+    }
+
+    async patch(url: string, data: any, config = {}) {
+        return this.client.patch(url, data, config);
+    }
+
+    async delete(url: string, config = {}) {
+        return this.client.delete(url, config);
+    }
 }
 
 export default APIService;

@@ -1,19 +1,31 @@
-import { Grid, Skeleton, Container } from '@mantine/core';
+import { Container, Grid, Skeleton } from '@mantine/core';
 
-const child = <Skeleton height={140} radius="md" animate={false} />;
+interface ContentProps {
+    children: React.ReactNode;
+    isLoading?: boolean;
+    skeletonCount?: number;
+}
 
-export function Content() {
+export function Content({ children, isLoading = false, skeletonCount = 3 }: ContentProps) {
+    // Render skeletons if loading
+    if (isLoading) {
+        return (
+            <Container my="md">
+                <Grid>
+                    {Array.from({ length: skeletonCount }).map((_, index) => (
+                        <Grid.Col key={index} span={12}>
+                            <Skeleton height={140} radius="md" animate />
+                        </Grid.Col>
+                    ))}
+                </Grid>
+            </Container>
+        );
+    }
+
+    // Render children when not loading
     return (
         <Container my="md">
-            <Grid>
-                <Grid.Col span={{ base: 12, xs: 4 }}>{child}</Grid.Col>
-                <Grid.Col span={{ base: 12, xs: 8 }}>{child}</Grid.Col>
-                <Grid.Col span={{ base: 12, xs: 8 }}>{child}</Grid.Col>
-                <Grid.Col span={{ base: 12, xs: 4 }}>{child}</Grid.Col>
-                <Grid.Col span={{ base: 12, xs: 3 }}>{child}</Grid.Col>
-                <Grid.Col span={{ base: 12, xs: 3 }}>{child}</Grid.Col>
-                <Grid.Col span={{ base: 12, xs: 6 }}>{child}</Grid.Col>
-            </Grid>
+            {children}
         </Container>
     );
 }

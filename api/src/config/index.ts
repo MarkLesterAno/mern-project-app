@@ -30,6 +30,7 @@ export default {
     TOKEN_REFRESH_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY ? process.env.REFRESH_TOKEN_EXPIRY : '7d',
     TOKEN_INVITE_EXPIRY: process.env.INVITE_TOKEN_EXPIRY ? process.env.INVITE_TOKEN_EXPIRY : '7d',
     TOKEN_RESET_EXPIRY: process.env.RESET_TOKEN_EXPIRY ? process.env.RESET_TOKEN_EXPIRY : '1d'
+
     
 
 }

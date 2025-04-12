@@ -2,8 +2,12 @@ import APIService from "./APIService";
 
 class PermissionService extends APIService {
 
-    getPermissions = async () => {
+    getAllPermissions = async () => {
         const response = await this.get(`permissions`);
+        return response ? response.data : null;
+    }
+    getPermissions = async ({limit, page}:any) => {
+        const response = await this.get(`permissions?limit=${limit}&page=${page}`);
         return response ? response.data : null;
     }
 
@@ -12,8 +16,8 @@ class PermissionService extends APIService {
         return response ? response.data : null;
     }
 
-    filterPermissions = async ({ filter }: any) => {
-        const response = await this.get(`permissions/search?filter=${filter}`);
+    filterPermissions = async ({ filter, limit, page }: any) => {
+        const response = await this.get(`permissions/search?filter=${filter}&limit=${limit}&page=${page}`);
         return response ? response.data : null;
     }
 

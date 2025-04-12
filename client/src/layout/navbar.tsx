@@ -1,63 +1,56 @@
 import { useEffect, useState } from 'react';
-import {
-    IconLogout,
-    IconSwitchHorizontal,
-    IconUsers,
-    IconDashboard,
-    IconFolder
-} from '@tabler/icons-react';
-import { AppShell, NavLink } from '@mantine/core';
-import classes from '../assets/styles/navbar-simple.module.css';
+import { IconDashboard, IconServer, } from '@tabler/icons-react';
+import { AppShell, ScrollArea } from '@mantine/core';
+import { UserButton } from '../components/user-button';
+import classes from '../assets/styles/navbar-nested.module.css';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { LinksGroup } from '../components/ui/navbar-links-group';
+
+
+const NavGroups = [
+    {
+        label: 'Dashboard',
+        icon: IconDashboard,
+        path: '/'
+    },
+    {
+        label: 'System',
+        icon: IconServer,
+        links: [
+            { label: 'Users', link: '/users' },
+            { label: 'Groups', link: '/groups' },
+            { label: 'Permissions', link: '/permissions' },
+        ],
+    },
+];
 
 export function Navbar() {
-    const { logout } = useAuth();
     const location = useLocation();
-    const navigate = useNavigate();
+    const { user, logout } = useAuth();
     const [active, setActive] = useState(location.pathname);
-    const data = [
-        { link: '/', label: 'Dashboard', icon: IconDashboard },
-        { link: '/users', label: 'Users', icon: IconUsers },
-        { link: '/groups', label: 'Groups', icon: IconFolder },
-    ];
+    const links = NavGroups.map((item) => <LinksGroup {...item} active={active} key={item.label} />);
+
+    // Update active state when the location changes
     useEffect(() => {
         setActive(location.pathname);
     }, [location]);
-    
-    const links = data.map((item) => (
-        <NavLink
-            className={classes.link}
-            active={item.link === active}
-            key={item.label}
-            onClick={(event) => {
-                event.preventDefault();
-                setActive(item.label);
-                navigate(item.link);
-            }}
-            label={item.label}
-            leftSection={<item.icon className={classes.linkIcon} stroke={1.5} />}
-        />
-    ));
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    }
 
     return (
         <AppShell.Navbar className={classes.navbar}>
-            <div className={classes.navbarMain}>
+            {/* Scrollable navigation links */}
+            <ScrollArea className={classes.links}>
                 {links}
-            </div>
+            </ScrollArea>
+
+            {/* Footer with user button */}
             <div className={classes.footer}>
-                <a href="#" className={classes.link} onClick={(event) => event.preventDefault()}>
-                    <IconSwitchHorizontal className={classes.linkIcon} stroke={1.5} />
-                    <span>Change account</span>
-                </a>
-                <a href="#" className={classes.link} onClick={handleLogout}>
-                    <IconLogout className={classes.linkIcon} stroke={1.5} />
-                    <span>Logout</span>
-                </a>
+                <UserButton
+                    username={user?.username || ''}
+                    email={user?.email || ''}
+                    avatarUrl={'https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/avatars/avatar-8.png'}
+                    onLogout={logout}
+                />
             </div>
         </AppShell.Navbar>
     );

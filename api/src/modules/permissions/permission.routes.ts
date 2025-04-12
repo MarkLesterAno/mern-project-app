@@ -47,9 +47,7 @@ export default (app: Router) => {
         celebrate(
             {
                 [Segments.BODY]: Joi.object({
-                    name: Joi.string().required(),
-                    description: Joi.string().required(),
-                    content_type: Joi.string().required(),
+                    resource: Joi.string().required(),
                 }),
             },
             { abortEarly: false }
@@ -62,9 +60,9 @@ export default (app: Router) => {
         celebrate(
             {
                 [Segments.BODY]: Joi.object({
-                    name: Joi.string().required(),
+                    resource: Joi.string().required(),
+                    action: Joi.string().required(),
                     description: Joi.string().required(),
-                    content_type: Joi.string().required(),
                 }),
             },
             { abortEarly: false }

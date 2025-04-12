@@ -1,4 +1,4 @@
-import { Group, Pagination, Select } from "@mantine/core";
+import { Box, Container, Grid, Group, Pagination, Select } from "@mantine/core";
 import { IconHash } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 
@@ -21,18 +21,22 @@ const CustomPagination = ({ pagination, setPageLimit, changePage }: any) => {
     }, [activePage]);
 
     const onChangeLimit = (value: any) => setLimit(value);
-    const onChangePage = (page: any) => setPage(page); 
-    
+    const onChangePage = (page: any) => setPage(page);
+
     return (
-        <Group justify='end'>
-            <Select
-                data={['10', '20', '30', '40', '50', 'All']}
-                defaultValue={'10'}
-                leftSection={<IconHash size={18} />}
-                onChange={onChangeLimit}
-                style={{ width: 100, color: 'transparent' }}
-            />
+        <Group justify='space-between' align="bottom" my={20}>
+            <Box w={100}>
+                <Select
+                    variant="filled"
+                    inputSize="sm"
+                    data={['10', '20', '30', '40', '50', 'All']}
+                    defaultValue={'10'}
+                    leftSection={<IconHash size={18} />}
+                    onChange={onChangeLimit}
+                />
+            </Box>
             <Pagination.Root
+                size="md"
                 total={total}
                 value={activePage}
                 onChange={onChangePage}
@@ -41,7 +45,7 @@ const CustomPagination = ({ pagination, setPageLimit, changePage }: any) => {
                     href: `#page-${page}`,
                 })}
             >
-                <Group gap={7}>
+                <Group gap={7} align="bottom">
                     <Pagination.First />
                     <Pagination.Previous />
                     <Pagination.Items />
