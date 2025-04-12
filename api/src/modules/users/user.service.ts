@@ -32,7 +32,6 @@ export default class UserService {
             const [count, users] = await Promise.all([
                 await this.userModel.find({}).countDocuments({}),
                 await this.userModel.find({})
-                    .select('_id email username isActive isStaff isSuperuser groups permissions')
                     .limit(pageSize)
                     .skip(skip)
             ])

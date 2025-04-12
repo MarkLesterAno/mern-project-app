@@ -20,9 +20,9 @@ export default class SeederService {
             const permissions: any[] = groups_and_perms.permissions
             const data = permissions.map((permission: any) => {
                 return {
-                    name: permission.name,
+                    resource: permission.resource,
                     description: permission.description,
-                    content_type: permission.content_type,
+                    action: permission.action,
                 }
             })
             await permissionModel.create(data)
@@ -44,7 +44,10 @@ export default class SeederService {
             const data = groups.map((group: any) => {
                 return {
                     name: group.name,
-                    permissions: group.permissions.map((permission: any) => allPermissions.filter((p: any) => p.name === permission)[0]._id)
+                    permissions: group.permissions.map((item: any) => {
+                        const permission = item.split('_');
+                        return allPermissions.filter((p: any) => p.resource === permission[1] && p.action === permission[0])[0]?._id
+                    })
                 }
             })
             await groupModel.create(data)
@@ -66,6 +69,11 @@ export default class SeederService {
 
             const users: any = default_users.users
             const data = await Promise.all(users.map(async (user: any) => {
+                const groups = user.groups.map((group: any) => allGroups.filter((g: any) => g.name === group)[0]?._id)
+                const permissions = user.permissions.map((item: any) => {
+                    const permission = item.split('_');
+                    return allPermissions.filter((p: any) => p.resource === permission[1] && p.action === permission[0])[0]?._id
+                })
                 return {
                     first_name: user.first_name,
                     last_name: user.last_name,
@@ -75,8 +83,8 @@ export default class SeederService {
                     isActive: user.isActive,
                     isStaff: user.isStaff,
                     isSuperuser: user.isSuperuser,
-                    groups: Array.isArray(user.groups) ? user.groups.map((group: any) => allGroups.filter((g: any) => g.name === group)[0]?._id) : [],
-                    permissions: Array.isArray(user.permissions) ? user.permissions.map((permission: any) => allPermissions.filter((p: any) => p.name === permission)[0]?._id) : []
+                    groups,
+                    permissions: permissions
                 };
             }));
             await userModel.create(data)

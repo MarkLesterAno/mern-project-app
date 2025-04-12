@@ -5,22 +5,22 @@ import {
     Text,
     Container,
     Button,
+    Group,
+    Checkbox,
+    TextInput,
+    PasswordInput,
 } from '@mantine/core';
-import classes from '../../assets/styles/authentication.module.css';
-import { GroupUtils, ComponentUtils } from '../../utils/component-utils';
+import { useForm, hasLength, isEmail } from '@mantine/form';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react';
-import { hasLength, isEmail, useForm } from '@mantine/form';
-
-
+import { useNavigate } from 'react-router-dom';
+import classes from '../../assets/styles/authentication.module.css';
 
 const Login = () => {
-    const auth = useAuth()
+    const { isLoading, login } = useAuth();
     const navigate = useNavigate();
 
+    // Form configuration
     const form = useForm({
-        mode: 'uncontrolled',
         initialValues: {
             username: '',
             password: '',
@@ -30,93 +30,74 @@ const Login = () => {
             username: isEmail('Invalid email'),
             password: hasLength({ min: 3 }, 'Must be at least 3 characters'),
         },
-    })
+    });
 
-    useEffect(() => {
-        auth.isLoggedIn() ? navigate('/') : navigate('/login')
-    }, [])
-
-
-    const children = [
-        {
-            type: 'text',
-            props: {
-                ...form.getInputProps('username'),
-                key: form.key('username'), name: 'username', label: 'Username',
-                placeholder: 'Username',
-                mt: 'md', required: true,
-                type: 'text',
-            }
-
-        },
-        {
-            type: 'password',
-            props: {
-                ...form.getInputProps('password'),
-                key: form.key('password'), name: 'password', label: 'Password',
-                placeholder: 'Password',
-                mt: 'md', required: true,
-                type: 'password',
-            }
-
-        },
-    ];
-
-    const groups = [
-        {
-            props: { justify: 'space-between', mt: 'lg' },
-            children: [
-                {
-                    type: 'checkbox',
-                    props: {
-                        key: form.key('rememberMe'), name: 'rememberMe', label: 'Remember Me', type: 'checkbox',
-                        ...form.getInputProps('rememberMe'),
-                    }
-                },
-                {
-                    type: 'anchor',
-                    props: {
-                        key: 'anchor', name: 'anchor', component: 'a', size: "sm", children: 'Forgot password?',
-                        href: '/auth/reset-password',
-                        c: "dimmed"
-                    }
-                },
-            ],
-        },
-    ]
-
-    const onSubmit = form.onSubmit(async (values) => {
-        await auth.login({
-            username: values.username,
-            password: values.password,
-        })
-        auth.isLoggedIn() ? navigate('/') : navigate('/login')
-    })
+    // Handle form submission
+    const handleSubmit = async (values: typeof form.values) => {
+        try {
+            await login({
+                username: values.username,
+                password: values.password,
+            });
+            navigate('/'); // Redirect to the root view after successful login
+        } catch (err: any) {
+            console.error(err.message); // Handle error (e.g., show notification)
+        }
+    };
 
     return (
         <Container size={420} my={40}>
+            {/* Title Section */}
             <Title ta="center" className={classes.title}>
                 Welcome back!
             </Title>
             <Text c="dimmed" size="sm" ta="center" mt={5}>
                 Do not have an account yet?{' '}
-                <Anchor size="sm" component="button">
+                <Anchor size="sm" component="a" href="/auth/register">
                     Create account
                 </Anchor>
             </Text>
 
+            {/* Login Form */}
             <Paper withBorder shadow="md" p={30} mt={30} radius="md">
-                <form onSubmit={onSubmit} >
-                    {children.map(child => ComponentUtils(child.type, child.props))}
-                    {groups.map((group, index) => GroupUtils(index, group.props, group.children))}
+                <form onSubmit={form.onSubmit(handleSubmit)}>
+                    {/* Username Field */}
+                    <TextInput
+                        label="Username"
+                        placeholder="Enter your email"
+                        required
+                        mt="md"
+                        {...form.getInputProps('username')}
+                    />
 
-                    <Button type='submit' fullWidth mt="xl">
+                    {/* Password Field */}
+                    <PasswordInput
+                        label="Password"
+                        placeholder="Enter your password"
+                        required
+                        mt="md"
+                        {...form.getInputProps('password')}
+                    />
+
+                    {/* Remember Me and Forgot Password */}
+                    <Group justify='space-between' mt="lg">
+                        <Checkbox
+                            label="Remember Me"
+                            {...form.getInputProps('rememberMe', { type: 'checkbox' })}
+                        />
+                        <Anchor size="sm" href="/auth/reset-password" c="dimmed">
+                            Forgot password?
+                        </Anchor>
+                    </Group>
+
+                    {/* Submit Button */}
+                    <Button type="submit" loading={isLoading} fullWidth mt="xl">
                         Sign in
                     </Button>
                 </form>
-
             </Paper>
         </Container>
     );
-}
-export default Login
+};
+
+export default Login;

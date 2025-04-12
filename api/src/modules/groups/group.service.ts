@@ -30,8 +30,7 @@ export default class GroupService {
             const [count, groups] = await Promise.all([
                 await this.groupModel.find({}).countDocuments({}),
                 await this.groupModel.find({})
-                    .select('_id name permissions')
-                    .populate('permissions', 'name description content_type')
+                    .populate('permissions', '_id description')
             ]);
             return { count, groups };
         } catch (error) {
@@ -82,7 +81,6 @@ export default class GroupService {
         permissions: any
     ): Promise<any> {
         try {
-            const allPermissions = await this.permissionModel.find({});
             const existingGroup: any = await this.groupModel.findOne({
                 name: { $regex: `.*${name}.*`, $options: 'i' }
             });
@@ -90,12 +88,12 @@ export default class GroupService {
             if (existingGroup) {
                 const error = ErrorHelper.formatError('Group name has already been taken.', 409);
                 return { error };
-            }
+            }  
 
             const new_group = await this.groupModel.create({
                 name: name,
                 permissions: permissions.map(
-                    (permission: any) => allPermissions.filter((p: any) => p.name === permission)[0]._id
+                    (permission: any) => new mongoose.Types.ObjectId(permission)
                 )
             });
             return { new_group };

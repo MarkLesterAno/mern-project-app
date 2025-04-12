@@ -2,11 +2,11 @@ import mongoose, { Schema, Document } from "mongoose";
 import IPermission from "../interfaces/IPermission";
 const Permission: Schema = new Schema(
     {
-        name: {
+        resource: {
             type: String,
             required: true,
         },
-        content_type: {
+        action: {
             type: String,
             required: true,
         },

@@ -2,6 +2,7 @@ import { Service, Inject } from "typedi";
 import mongoose from "mongoose";
 import ErrorHelper from "../../shared/helpers/error.helper";
 import { default_content_types } from "../../shared/seeders/fixtures";
+import PaginationUtils from "../../shared/utils/PaginationUtils";
 
 @Service()
 export default class PermissionsService {
@@ -24,21 +25,25 @@ export default class PermissionsService {
     * @param limit 
     * @param page 
     */
-    public async getPermissions(): Promise<any> {
+    public async getPermissions(limit?: any, page?: any): Promise<any> {
         try {
+            if (!limit && !page) {
+                // If no limit and page are provided, return all permissions
+                const permissions = await this.permissionModel.find({});
+                const count = permissions.length;
+                return { count, permissions };
+            }
+    
+            // If limit and page are provided, return paginated permissions
+            const { pageSize, skip } = PaginationUtils.setPagination(limit, page);
             const [count, permissions] = await Promise.all([
-                await this.permissionModel.find({}).countDocuments({}),
-                await this.permissionModel.find({})
-                .select('_id name description content_type')
+                this.permissionModel.find({}).countDocuments({}),
+                this.permissionModel.find({})
+                    .limit(pageSize)
+                    .skip(skip),
             ]);
+    
             return { count, permissions };
-        } catch (error) {
-            throw error;
-        }
-    }
-    public async getContentTypes(): Promise<any> {
-        try {
-            return { default_content_types };
         } catch (error) {
             throw error;
         }
@@ -49,16 +54,29 @@ export default class PermissionsService {
     * @param limit 
     * @param page
     */
-    public async filterPermissions(filter: any,): Promise<any> {
+    public async filterPermissions(filter: any, limit?: any, page?: any): Promise<any> {
         try {
+
+            if (!limit && !page) {
+                // If no limit and page are provided, return all permissions
+                const permissions = await this.permissionModel.find({
+                    resource: { $regex: `.*${filter}.*`, $options: 'i' }
+                });
+                const count = permissions.length;
+                return { count, permissions };
+            }
+            // If limit and page are provided, return paginated permissions
+            const { pageSize, skip } = PaginationUtils.setPagination(limit, page)
             const [count, permissions] = await Promise.all([
                 await this.permissionModel.find({
-                    name: { $regex: `.*${filter}.*`, $options: 'i' }
+                    resource: { $regex: `.*${filter}.*`, $options: 'i' }
                 }).countDocuments({}),
                 await this.permissionModel.find({
-                    name: { $regex: `.*${filter}.*`, $options: 'i' }
+                    resource: { $regex: `.*${filter}.*`, $options: 'i' }
                 })
-                    .select('_id name description content_type')
+                    .select('_id resource action description')
+                    .limit(pageSize)
+                    .skip(skip)
             ]);
             return { count, permissions };
         } catch (error) {
@@ -83,25 +101,23 @@ export default class PermissionsService {
     }
 
     public async createPermission(
-        name: string,
-        description: string,
-        content_type: string
+        resource: string,
     ): Promise<any> {
         try {
             const existingPermission: any = await this.permissionModel.findOne({
-                name: { $regex: `.*${name}.*`, $options: 'i' }
+                resource: { $regex: `.*${resource}.*`, $options: 'i' }
             });
 
             if (existingPermission) {
                 const error = ErrorHelper.formatError('Permission name has already been taken.', 409);
                 return { error };
             }
-
-            const new_permission = await this.permissionModel.create({
-                name: name,
-                description: description,
-                content_type: content_type
+            const actions = ['view', 'add', 'update', 'delete'];
+            const permissions = actions.map((action) => {
+                return { resource: resource, action: action, description: ` Can ${action} ${resource}` };
             });
+
+            const new_permission = await this.permissionModel.create(permissions);
             return { new_permission };
         } catch (error) {
             throw error;
@@ -110,17 +126,17 @@ export default class PermissionsService {
 
     public async updatePermission(
         _id: string,
-        name: string,
-        description: string,
-        content_type: string
+        resource: string,
+        action: string,
+        description: string
     ): Promise<any> {
         try {
             const permission: any = await this.permissionModel.updateOne(
                 { _id },
                 {
-                    name: name,
-                    description: description,
-                    content_type: content_type
+                    resource: resource,
+                    action: action,
+                    description: description
                 },
                 {
                     new: true

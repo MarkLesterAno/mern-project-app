@@ -2,8 +2,12 @@ import APIService from "./APIService";
 
 class GroupService extends APIService {
 
-    getGroups = async () => {
+    getAllGroups = async () => {
         const response = await this.get(`groups`);
+        return response ? response.data : null;
+    }
+    getGroups = async ({limit, page}:any) => {
+        const response = await this.get(`groups?limit=${limit}&page=${page}`);
         return response ? response.data : null;
     }
 
@@ -12,8 +16,8 @@ class GroupService extends APIService {
         return response ? response.data : null;
     }
 
-    filterGroups = async ({ filter}: any) => {
-        const response = await this.get(`groups/search?filter=${filter}`);
+    filterGroups = async ({ filter, limit, page}: any) => {
+        const response = await this.get(`groups/search?filter=${filter}&limit=${limit}&page=${page}`);
         return response ? response.data : null;
     }
 

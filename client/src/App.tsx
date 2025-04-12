@@ -11,6 +11,7 @@ import axios from "axios";
 import { AppShell, rem } from "@mantine/core";
 import lazyLoader from "./hoc/LazyLoader";
 import DeviceRoutes from "./hoc/DeviceRoutes";
+import PublicRoute from "./hoc/PublicRoutes";
 
 
 const Login = lazyLoader(() => import('./views/auth/login'));
@@ -18,6 +19,7 @@ const SignUp = lazyLoader(() => import('./views/auth/signup'));
 const ResetPassword = lazyLoader(() => import('./views/auth/reset-password'));
 const Users = lazyLoader(() => import('./views/users'));
 const Groups = lazyLoader(() => import('./views/groups'));
+const Permissions = lazyLoader(() => import('./views/permissions'));
 
 interface IAppState {
   error: any;
@@ -81,14 +83,18 @@ class App extends Component<any, IAppState> {
         <AuthProvider>
           <Router>
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/auth/signup/:token" element={<SignUp />} />
-              <Route path="/auth/reset-password/" element={<ResetPassword />} />
-              <Route path="/auth/reset-password/:token" element={<ResetPassword />} />
+              <Route element={<PublicRoute />}>
+                <Route path="/login" element={<Login />} />
+                <Route path="/auth/signup/:token" element={<SignUp />} />
+                <Route path="/auth/reset-password/" element={<ResetPassword />} />
+                <Route path="/auth/reset-password/:token" element={<ResetPassword />} />
+              </Route>
               <Route element={<ProtectedRoutes />} >
                 <Route path="/" element={<SampleContents />} />
+                <Route path="/dashboard" element={<SampleContents />} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/groups" element={<Groups />} />
+                <Route path="/permissions" element={<Permissions />} />
               </Route>
             </Routes>
           </Router>

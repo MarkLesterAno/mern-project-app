@@ -3,7 +3,7 @@ import { Grid, Skeleton, Container, Group, MultiSelect, TableOfContents, Button,
 import usePermission from '../hooks/usePermission';
 import { useQueryClient } from 'react-query';
 import { useForm, hasLength } from '@mantine/form';
-import { ComponentUtils, GroupUtils } from '../utils/component-utils';
+import { ComponentUtils } from '../utils/component-utils';
 import { IconDots, IconFileZip, IconEye, IconTrash } from '@tabler/icons-react';
 import CustomModal from '../components/custom-modal';
 
@@ -11,8 +11,8 @@ import CustomModal from '../components/custom-modal';
 const child = <Skeleton height={140} radius="md" animate={false} />;
 
 const SampleContents = () => {
-    const queryClient = useQueryClient();
-    const { permissions, isLoading, error, fetchPermissions } = usePermission(queryClient)
+    // const queryClient = useQueryClient();
+    // const { permissions, isLoading, error, fetchPermissions } = usePermission(queryClient)
 
     const group_form = useForm({
         mode: 'uncontrolled',
@@ -35,24 +35,25 @@ const SampleContents = () => {
                 type: 'text',
             }
         },
-        {
-            type: 'multiSelect',
-            props: {
-                ...group_form.getInputProps('permissions'),
-                key: group_form.key('permissions'), name: 'permissions', label: 'Permissions',
-                placeholder: 'Select permissions',
-                required: true,
-                searchable: true,
-                data: permissions.map((permission: any) => (
-                    {
-                        value: permission._id,
-                        label: `${permission.content_type} | ${permission.description}`
-                    })),
-            }
-        },
+        // {
+        //     type: 'multiSelect',
+        //     props: {
+        //         ...group_form.getInputProps('permissions'),
+        //         key: group_form.key('permissions'), name: 'permissions', label: 'Permissions',
+        //         placeholder: 'Select permissions',
+        //         required: true,
+        //         searchable: true,
+        //         data: permissions.map((permission: any) => (
+        //             {
+        //                 value: permission._id,
+        //                 label: `${permission.content_type} | ${permission.description}`
+        //             })),
+        //     }
+        // },
     ];
     const footer = [
         {
+            type: 'group',
             props: { justify: 'space-between',  },
             children: [
                 {
@@ -73,7 +74,7 @@ const SampleContents = () => {
                 <CustomModal title="Create Group" buttonText="Create Group"  >
                     <form>
                         {children.map(child => ComponentUtils(child.type, child.props))}
-                        {footer.map((group, index) => GroupUtils(index, group.props, group.children))}
+                        {footer.map((group, index) => ComponentUtils(group.type, group.props, group.children))}
                     </form>
                 </CustomModal>
                 <Grid.Col span={{ base: 12, xs: 4 }}>
